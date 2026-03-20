@@ -1,0 +1,16 @@
+{
+  "name": "vibe-coding",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple UI for Twilio Verify OTP SMS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "twilio": "^5.13.0"
+  }
+}
