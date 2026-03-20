@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twilio Verify OTP</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #333;
+    }
+    .container {
+      display: flex;
+      gap: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .panel {
+      flex: 1;
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .panel h2 {
+      margin-bottom: 1rem;
+      color: #444;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #0066ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover { background: #0052cc; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    .response {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 4px;
+      border: 2px solid #ddd;
+      background: #fafafa;
+      overflow-x: auto;
+      display: none;
+    }
+    .response.success { border-color: #22c55e; }
+    .response.error { border-color: #ef4444; }
+    .response pre {
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    @media (max-width: 640px) {
+      .container { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Twilio Verify OTP</h1>
+  <div class="container">
+    <div class="panel">
+      <h2>Send OTP</h2>
+      <label for="send-phone">Phone Number (E.164)</label>
+      <input type="tel" id="send-phone" placeholder="+15551234567">
+      <button id="send-btn">Send OTP</button>
+      <div class="response" id="send-response"><pre></pre></div>
+    </div>
+    <div class="panel">
+      <h2>Verify OTP</h2>
+      <label for="verify-phone">Phone Number (E.164)</label>
+      <input type="tel" id="verify-phone" placeholder="+15551234567">
+      <label for="verify-code">Code</label>
+      <input type="text" id="verify-code" placeholder="123456" maxlength="6">
+      <button id="verify-btn">Verify</button>
+      <div class="response" id="verify-response"><pre></pre></div>
+    </div>
+  </div>
+
+  <script>
+    const sendPhone = document.getElementById('send-phone');
+    const sendBtn = document.getElementById('send-btn');
+    const sendResponse = document.getElementById('send-response');
+    const verifyPhone = document.getElementById('verify-phone');
+    const verifyCode = document.getElementById('verify-code');
+    const verifyBtn = document.getElementById('verify-btn');
+    const verifyResponse = document.getElementById('verify-response');
+
+    function showResponse(el, data, isSuccess) {
+      el.style.display = 'block';
+      el.className = 'response ' + (isSuccess ? 'success' : 'error');
+      el.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('/api/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: sendPhone.value }),
+        });
+        const data = await res.json();
+        showResponse(sendResponse, data, res.ok);
+        if (res.ok) {
+          verifyPhone.value = sendPhone.value;
+        }
+      } catch (err) {
+        showResponse(sendResponse, { error: err.message }, false);
+      }
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Send OTP';
+    });
+
+    verifyBtn.addEventListener('click', async () => {
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: verifyPhone.value, code: verifyCode.value }),
+        });
+        const data = await res.json();
+        const isSuccess = res.ok && data.status === 'approved';
+        showResponse(verifyResponse, data, isSuccess);
+      } catch (err) {
+        showResponse(verifyResponse, { error: err.message }, false);
+      }
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = 'Verify';
+    });
+  </script>
+</body>
+</html>
